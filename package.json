@@ -1,0 +1,29 @@
+{
+  "name": "bot-xadrez",
+  "version": "1.0.0",
+  "description": "Bot de Xadrez para chat",
+  "keywords": [
+    "chess",
+    "bot"
+  ],
+  "homepage": "https://github.com/murilostavares/bot-xadrez#readme",
+  "bugs": {
+    "url": "https://github.com/murilostavares/bot-xadrez/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/murilostavares/bot-xadrez.git"
+  },
+  "license": "MIT",
+  "author": "Murilo S. Tavares",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "mongoose": "^8.15.0",
+    "telegraf": "^4.16.3"
+  }
+}
