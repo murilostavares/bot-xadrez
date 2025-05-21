@@ -1,5 +1,5 @@
-import "dotenv/config"; // Simplifica o carregamento do .env
-import mongoose from "mongoose"; // Para desconectar o MongoDB ao encerrar
+import "dotenv/config";
+import mongoose from "mongoose";
 import path from "path";
 
 // Carrega variáveis de ambiente com fallback
@@ -17,8 +17,8 @@ const platforms = (process.env.PLATFORMS || "telegram")
 
 // Mapeamento de plataformas para seus arquivos de bot
 const platformMap = {
-  telegram: "./platforms/telegram/bot.js",
-  whatsapp: "./platforms/whatsapp/bot.js",
+  telegram: "./bot/platforms/telegram/bot.js", // Caminho ajustado
+  whatsapp: "./bot/platforms/whatsapp/bot.js", // Ajustado para consistência
 };
 
 // Array para armazenar instâncias dos bots

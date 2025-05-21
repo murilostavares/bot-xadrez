@@ -1,5 +1,5 @@
 import Game from "../../../models/Game.js";
-import { generatePGN } from "../../utils/pgn.js";
+import { generatePGN } from "../../../utils/pgn.js";
 
 export function setupExportPgnCommand(bot) {
   bot.command("exportpgn", async (ctx) => {

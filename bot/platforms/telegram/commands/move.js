@@ -1,7 +1,7 @@
 import Game from "../../../models/Game.js";
 import { exec } from "child_process";
 import { promisify } from "util";
-import { generatePGN } from "../../utils/pgn.js";
+import { generatePGN } from "../../../utils/pgn.js";
 const execPromise = promisify(exec);
 
 export function setupMoveCommand(bot) {

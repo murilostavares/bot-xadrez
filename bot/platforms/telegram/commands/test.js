@@ -1,4 +1,4 @@
-import { testStockfish } from "../../utils/stockfish.js";
+import { testStockfish } from "../../../utils/stockfish.js";
 
 export function setupTestCommand(bot) {
   bot.command("test", async (ctx) => {
