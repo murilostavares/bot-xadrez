@@ -1,4 +1,5 @@
 import Game from "../../../models/Game.js";
+import { Chess } from "chess.js";
 
 export async function setupStartCommand(bot) {
   bot.start(async (ctx) => {
@@ -12,7 +13,7 @@ export async function setupStartCommand(bot) {
         // Criar um novo jogo se não existir
         game = new Game({
           chatId,
-          fen: "rnbqkbnr/pppppppp/5n5/8/8/5N5/PPPPPPPP/RNBQKBNR w KQkq - 0 1", // Posição inicial do xadrez
+          fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", // Posição inicial do xadrez
           pgn: "", // Histórico inicial vazio
           nivel: 10, // Nível de dificuldade padrão
           ativo: true,
@@ -20,14 +21,16 @@ export async function setupStartCommand(bot) {
           atualizadoEm: Date.now(),
         });
         await game.save();
-        ctx.reply(
-          "Bem-vindo ao Bot de Xadrez! ♟️\nUm novo jogo foi iniciado. Use /level para ajustar o nível, /move para jogar, ou /newgame para reiniciar."
-        );
-      } else {
-        ctx.reply(
-          `Bem-vindo de volta ao Bot de Xadrez! ♟️\nVocê tem um jogo em andamento (nível ${game.nivel}). Use /level para ajustar o nível, /move para jogar, ou /newgame para reiniciar.`
-        );
       }
+
+      // Inicializar o jogo com a FEN atual
+      const chess = new Chess(game.fen);
+      const turno = chess.turn(); // 'w' para branco, 'b' para preto
+      const corJogador = turno === "w" ? "brancas" : "pretas";
+
+      ctx.reply(
+        `Bem-vindo ao Bot de Xadrez! ♟️\nVocê está jogando com as peças ${corJogador}.\nUm novo jogo foi iniciado. Use /level para ajustar o nível, /move para jogar, ou /newgame para reiniciar.`
+      );
     } catch (error) {
       console.error("Erro ao processar o comando /start:", error);
       ctx.reply(

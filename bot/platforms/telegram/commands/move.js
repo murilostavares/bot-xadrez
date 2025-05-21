@@ -1,7 +1,8 @@
 import Game from "../../../models/Game.js";
 import { exec } from "child_process";
 import { promisify } from "util";
-import { generatePGN } from "../../../utils/pgn.js";
+import { Chess } from "chess.js";
+
 const execPromise = promisify(exec);
 
 export function setupMoveCommand(bot) {
@@ -9,10 +10,10 @@ export function setupMoveCommand(bot) {
     try {
       const chatId = ctx.chat.id;
       const args = ctx.message.text.split(" ").slice(1);
-      const userMove = args[0];
+      const userInput = args[0];
 
-      if (!userMove || !/^[a-h][1-8][a-h][1-8]$/.test(userMove)) {
-        ctx.reply("Por favor, forneça um movimento válido (ex.: /move e2e4).");
+      if (!userInput) {
+        ctx.reply("Por favor, forneça um movimento válido (ex.: /move e4).");
         return;
       }
 
@@ -26,17 +27,37 @@ export function setupMoveCommand(bot) {
         return;
       }
 
+      // Inicializar o jogo com a FEN atual
+      let chess;
+      try {
+        chess = new Chess(game.fen);
+      } catch (fenError) {
+        console.warn("FEN inválida detectada. Iniciando posição padrão.");
+        chess = new Chess(); // Posição inicial padrão
+      }
+
+      // Tentar aplicar o movimento do usuário
+      const userMove = chess.move(userInput, { sloppy: true });
+
+      if (!userMove) {
+        ctx.reply("Movimento inválido. Por favor, tente novamente.");
+        return;
+      }
+
+      const userMoveSan = userMove.san;
+
       // Configurar o Stockfish com o nível de dificuldade
       const stockfishCommands = [
         `uci`,
         `setoption name Skill Level value ${game.nivel}`,
-        `position fen ${game.fen}`,
+        `position fen ${chess.fen()}`,
         `go movetime 1000`,
       ].join("\n");
 
       const { stdout, stderr } = await execPromise(
         `echo "${stockfishCommands}" | stockfish`
       );
+
       if (stderr) {
         console.error("Erro ao executar o Stockfish:", stderr);
         ctx.reply("Erro ao processar o movimento com o Stockfish.");
@@ -45,6 +66,7 @@ export function setupMoveCommand(bot) {
 
       const lines = stdout.split("\n");
       const bestMoveLine = lines.find((line) => line.startsWith("bestmove"));
+
       if (!bestMoveLine) {
         ctx.reply("Não consegui determinar o melhor movimento do Stockfish.");
         return;
@@ -52,48 +74,28 @@ export function setupMoveCommand(bot) {
 
       const stockfishMove = bestMoveLine.split(" ")[1];
 
-      // Atualizar o tabuleiro
-      const updatedCommands = [
-        `uci`,
-        `position fen ${game.fen} moves ${userMove} ${stockfishMove}`,
-        `d`,
-      ].join("\n");
+      const from = stockfishMove.slice(0, 2);
+      const to = stockfishMove.slice(2, 4);
+      const promotion =
+        stockfishMove.length === 5 ? stockfishMove[4] : undefined;
 
-      const { stdout: updatedStdout } = await execPromise(
-        `echo "${updatedCommands}" | stockfish`
-      );
-      const fenLine = updatedStdout
-        .split("\n")
-        .find((line) => line.startsWith("Fen: "));
-      if (!fenLine) {
-        ctx.reply("Erro ao atualizar a posição do tabuleiro.");
+      const botMove = chess.move({ from, to, promotion });
+
+      if (!botMove) {
+        ctx.reply("Erro ao processar o movimento do Stockfish.");
         return;
       }
 
-      const newFen = fenLine.split("Fen: ")[1].trim();
-
-      // Atualizar a lista de movimentos
-      const moves = game.pgn ? game.pgn.split(" ") : [];
-      moves.push(userMove, stockfishMove);
-
-      // Gerar o PGN usando a nova função
-      const { text: newPgn } = generatePGN({
-        moves,
-        whitePlayer: `Player_${chatId}`,
-        blackPlayer: "ChessBot",
-        level: game.nivel,
-        result: "*", // Partida em andamento
-        date: new Date(),
-      });
+      const botMoveSan = botMove.san;
 
       // Atualizar o jogo no MongoDB
-      game.fen = newFen;
-      game.pgn = moves.join(" "); // Armazenar os movimentos em formato UCI
+      game.fen = chess.fen();
+      game.pgn = chess.pgn();
       game.atualizadoEm = Date.now();
       await game.save();
 
       ctx.reply(
-        `Seu movimento: ${userMove}\nMinha resposta: ${stockfishMove}\nNovo estado do tabuleiro (FEN): ${newFen}`
+        `Seu movimento: ${userMoveSan}\nMinha resposta: ${botMoveSan}\n\nNotação da partida:\n${game.pgn}`
       );
     } catch (error) {
       console.error("Erro ao processar o movimento:", error);
