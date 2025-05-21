@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+
 let isClosing = false;
 
 export async function connectDB() {

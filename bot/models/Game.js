@@ -1,12 +1,13 @@
-import mongoose from 'mongoose'
+import mongoose from "mongoose";
 
 const gameSchema = new mongoose.Schema({
-  chatId: { type: Number, required: true },
-  moves: [String], // tipo ['e2e4', 'e7e5']
-  fen: String,
-  pgn: String,
-  skillLevel: { type: Number, default: 10 },
-  createdAt: { type: Date, default: Date.now },
-})
+  chatId: { type: Number, required: true, index: true },
+  fen: { type: String, required: true }, // Estado atual do tabuleiro
+  pgn: { type: String, default: "" }, // Histórico da partida
+  nivel: { type: Number, default: 10 }, // Nível de dificuldade
+  ativo: { type: Boolean, default: true },
+  criadoEm: { type: Date, default: Date.now },
+  atualizadoEm: { type: Date, default: Date.now },
+});
 
-export default mongoose.model('Game', gameSchema)
+export default mongoose.model("Game", gameSchema);
