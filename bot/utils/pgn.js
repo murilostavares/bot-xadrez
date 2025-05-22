@@ -1,6 +1,7 @@
-import { Chess } from "chess.js";
+// ~/bot-xadrez/utils/pgn.js
+import { Chess } from "chess.js/chess.js";
 
-// Função para formatar a data no formato PGN (ex.: [Date "2025.05.21"])
+// Função para formatar a data no formato PGN (ex.: [Date "2025.05.22"])
 function formatDate(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -48,10 +49,10 @@ export function generatePGN({
       .trim();
 
     return {
-      text: movesOnly, // Apenas os movimentos (ex.: 1. e4 e5)
+      text: movesOnly,
       formatted: `[Event "Casual Game"]\n[Site "Telegram"]\n[Date "${formatDate(
         date
-      )}"]\n[Round "1"]\n[White "${whitePlayer}"]\n[Black "${blackPlayer}"]\n[Result "${result}"]\n[Level "${level}"]\n\n${fullPgn}`, // PGN completo para exportação
+      )}"]\n[Round "1"]\n[White "${whitePlayer}"]\n[Black "${blackPlayer}"]\n[Result "${result}"]\n[Level "${level}"]\n\n${fullPgn}`,
     };
   } catch (error) {
     console.error("Erro ao gerar PGN:", error);

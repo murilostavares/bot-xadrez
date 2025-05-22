@@ -1,7 +1,8 @@
-import Chess from "chess.js";
+import { Chess } from "chess.js/chess.js"; // Importação explícita do módulo ESM
 
 export class GameEngine {
   constructor(fen) {
+    console.log("Inicializando GameEngine com FEN:", fen);
     this.chess = new Chess(fen);
     this.initialFen = fen;
   }
@@ -9,9 +10,11 @@ export class GameEngine {
   // Valida o FEN
   validateFen(fen) {
     try {
+      console.log("Validando FEN:", fen);
       // Tenta usar o método validateFen do chess.js
       if (typeof this.chess.validateFen === "function") {
         const validation = this.chess.validateFen(fen);
+        console.log("Resultado da validação do FEN:", validation);
         return {
           valid: validation.valid,
           error: validation.error || "No errors.",
@@ -19,16 +22,19 @@ export class GameEngine {
       }
 
       // Fallback: Validação manual simples
+      console.log("Usando fallback para validação do FEN");
       const chessTemp = new Chess();
       chessTemp.load(fen);
       return { valid: true, error: "No errors." };
     } catch (error) {
+      console.error("Erro ao validar FEN:", error.message);
       return { valid: false, error: error.message };
     }
   }
 
   // Valida e aplica um movimento em notação SAN
   applyMove(sanMove) {
+    console.log("Aplicando movimento SAN:", sanMove);
     const move = this.chess.move(sanMove, { strict: true });
     if (!move) {
       throw new Error("Movimento inválido ou ilegal.");
@@ -38,11 +44,14 @@ export class GameEngine {
 
   // Obtém o FEN atualizado
   getFen() {
-    return this.chess.fen();
+    const fen = this.chess.fen();
+    console.log("FEN obtido:", fen);
+    return fen;
   }
 
   // Converte um movimento UCI para SAN
   getSanMove(uciMove) {
+    console.log("Convertendo movimento UCI para SAN:", uciMove);
     const move = this.chess.move({
       from: uciMove.slice(0, 2),
       to: uciMove.slice(2, 4),
@@ -60,7 +69,8 @@ export class GameEngine {
     result = "*",
     date = new Date()
   ) {
-    return generatePGN({
+    console.log("Gerando PGN com movimentos:", moves);
+    const pgn = generatePGN({
       moves,
       whitePlayer,
       blackPlayer,
@@ -68,5 +78,7 @@ export class GameEngine {
       result,
       date,
     });
+    console.log("PGN gerado:", pgn);
+    return pgn;
   }
 }
