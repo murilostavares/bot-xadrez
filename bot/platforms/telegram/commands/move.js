@@ -15,7 +15,7 @@ export function setupMoveCommand(bot) {
       if (!sanMove) {
         console.log("Erro: Nenhum movimento fornecido.");
         ctx.reply(
-          "Por favor, forneça um movimento válido (ex.: /move e4 ou /move Cxe4)."
+          "Por favor, forneça um movimento válido (ex.: /move e4 ou /move Nc3)."
         );
         return;
       }
@@ -52,6 +52,18 @@ export function setupMoveCommand(bot) {
       console.log("FEN validado com sucesso:", game.fen);
 
       // Validar e aplicar o movimento do usuário
+      const moves = gameEngine.chess.moves({ verbose: true });
+      const isValidMove = moves.some((move) => move.san === sanMove);
+      if (!isValidMove) {
+        console.log("Movimento inválido fornecido:", sanMove);
+        ctx.reply(
+          `Movimento inválido: "${sanMove}". Use uma notação SAN válida (ex.: e4, Nc3, Qxd4). Movimentos legais: ${moves
+            .map((m) => m.san)
+            .join(", ")}`
+        );
+        return;
+      }
+
       const userMove = gameEngine.applyMove(sanMove);
       const userUciMove = userMove.from + userMove.to;
       console.log("Movimento do usuário (UCI):", userUciMove);
@@ -93,10 +105,10 @@ export function setupMoveCommand(bot) {
       }
 
       // Gerar o PGN
-      const moves = game.pgn ? game.pgn.split(" ") : [];
-      moves.push(userUciMove, stockfishUciMove);
+      const pgnMoves = game.pgn ? game.pgn.split(" ") : [];
+      pgnMoves.push(userUciMove, stockfishUciMove);
       const { text: pgnText } = gameEngine.generatePgn(
-        moves,
+        pgnMoves,
         `Player_${chatId}`,
         "ChessBot",
         game.nivel
@@ -105,7 +117,7 @@ export function setupMoveCommand(bot) {
 
       // Atualizar o jogo no MongoDB
       game.fen = newFen;
-      game.pgn = moves.join(" ");
+      game.pgn = pgnMoves.join(" ");
       game.atualizadoEm = Date.now();
       await game.save();
       console.log("Jogo salvo no MongoDB com FEN:", newFen);
