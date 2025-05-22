@@ -12,18 +12,22 @@ export class GameEngine {
       "Métodos no protótipo de chess:",
       Object.getOwnPropertyNames(Object.getPrototypeOf(this.chess))
     );
+    console.log(
+      "Verificando validateFen:",
+      typeof this.chess.validateFen === "function"
+        ? "Disponível"
+        : "Não disponível"
+    );
   }
 
-  // Valida o FEN
+  // Valida o FEN usando o fallback
   validateFen(fen) {
     try {
       console.log("Validando FEN:", fen);
-      const validation = this.chess.validateFen(fen);
-      console.log("Resultado da validação do FEN:", validation);
-      return {
-        valid: validation.valid,
-        error: validation.error || "No errors.",
-      };
+      const chessTemp = new Chess();
+      chessTemp.load(fen);
+      console.log("FEN validado com sucesso via fallback");
+      return { valid: true, error: "No errors." };
     } catch (error) {
       console.error("Erro ao validar FEN:", error.message);
       return { valid: false, error: error.message };
