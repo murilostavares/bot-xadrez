@@ -56,15 +56,19 @@ export function setupMoveCommand(bot) {
       const userUciMove = userMove.from + userMove.to;
       console.log("Movimento do usuário (UCI):", userUciMove);
 
+      // Atualizar o FEN com o movimento do usuário antes de consultar o Stockfish
+      const fenAfterUserMove = gameEngine.getFen();
+      console.log("FEN após movimento do usuário:", fenAfterUserMove);
+
       // Obter o melhor movimento do Stockfish
-      console.log("Consultando Stockfish com FEN:", game.fen);
+      console.log("Consultando Stockfish com FEN:", fenAfterUserMove);
       const stockfishUciMove = await Stockfish.getBestMove(
-        game.fen,
+        fenAfterUserMove,
         game.nivel
       );
       console.log("Movimento do Stockfish (UCI):", stockfishUciMove);
 
-      // Atualizar o tabuleiro com os movimentos
+      // Atualizar o tabuleiro com o movimento do Stockfish
       gameEngine.applyMove(gameEngine.getSanMove(stockfishUciMove));
       const newFen = gameEngine.getFen();
       console.log("Novo FEN após movimentos:", newFen);

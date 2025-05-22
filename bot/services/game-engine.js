@@ -1,3 +1,4 @@
+// ~/bot-xadrez/services/game-engine.js
 import { Chess } from "chess.js";
 
 export class GameEngine {
