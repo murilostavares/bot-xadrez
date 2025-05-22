@@ -1,19 +1,19 @@
 // ~/bot-xadrez/bot/platforms/telegram/commands/move.js
 import Game from "../../../models/Game.js";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { generatePGN } from "../../utils/pgn.js";
-const execPromise = promisify(exec);
+import { GameEngine } from "../../../services/game-engine.js";
+import { Stockfish } from "../../../services/stockfish.js";
 
 export function setupMoveCommand(bot) {
   bot.command("move", async (ctx) => {
     try {
       const chatId = ctx.chat.id;
       const args = ctx.message.text.split(" ").slice(1);
-      const userMove = args[0];
+      const sanMove = args[0];
 
-      if (!userMove || !/^[a-h][1-8][a-h][1-8]$/.test(userMove)) {
-        ctx.reply("Por favor, forneça um movimento válido (ex.: /move e2e4).");
+      if (!sanMove) {
+        ctx.reply(
+          "Por favor, forneça um movimento válido (ex.: /move e4 ou /move Cxe4)."
+        );
         return;
       }
 
@@ -27,75 +27,43 @@ export function setupMoveCommand(bot) {
         return;
       }
 
-      // Configurar o Stockfish com o nível de dificuldade
-      const stockfishCommands = [
-        `uci`,
-        `setoption name Skill Level value ${game.nivel}`,
-        `position fen ${game.fen}`,
-        `go movetime 1000`,
-      ].join("\n");
+      // Inicializar o motor de jogo
+      const gameEngine = new GameEngine(game.fen);
 
-      const { stdout, stderr } = await execPromise(
-        `echo "${stockfishCommands}" | stockfish`
+      // Validar e aplicar o movimento do usuário
+      const userMove = gameEngine.applyMove(sanMove);
+      const userUciMove = userMove.from + userMove.to;
+
+      // Obter o melhor movimento do Stockfish
+      const stockfishUciMove = await Stockfish.getBestMove(
+        game.fen,
+        game.nivel
       );
-      if (stderr) {
-        console.error("Erro ao executar o Stockfish:", stderr);
-        ctx.reply("Erro ao processar o movimento com o Stockfish.");
-        return;
-      }
 
-      const lines = stdout.split("\n");
-      const bestMoveLine = lines.find((line) => line.startsWith("bestmove"));
-      if (!bestMoveLine) {
-        ctx.reply("Não consegui determinar o melhor movimento do Stockfish.");
-        return;
-      }
+      // Atualizar o tabuleiro com os movimentos
+      gameEngine.applyMove(gameEngine.getSanMove(stockfishUciMove));
+      const newFen = gameEngine.getFen();
 
-      const stockfishMove = bestMoveLine.split(" ")[1];
-
-      // Atualizar o tabuleiro
-      const updatedCommands = [
-        `uci`,
-        `position fen ${game.fen} moves ${userMove} ${stockfishMove}`,
-        `d`,
-      ].join("\n");
-
-      const { stdout: updatedStdout } = await execPromise(
-        `echo "${updatedCommands}" | stockfish`
-      );
-      const fenLine = updatedStdout
-        .split("\n")
-        .find((line) => line.startsWith("Fen: "));
-      if (!fenLine) {
-        ctx.reply("Erro ao atualizar a posição do tabuleiro.");
-        return;
-      }
-
-      const newFen = fenLine.split("Fen: ")[1].trim();
-
-      // Atualizar a lista de movimentos
+      // Gerar o PGN
       const moves = game.pgn ? game.pgn.split(" ") : [];
-      moves.push(userMove, stockfishMove);
-
-      // Gerar o PGN usando a função existente
-      const { text: pgnText } = generatePGN({
+      moves.push(userUciMove, stockfishUciMove);
+      const { text: pgnText } = gameEngine.generatePgn(
         moves,
-        whitePlayer: `Player_${chatId}`,
-        blackPlayer: "ChessBot",
-        level: game.nivel,
-        result: "*", // Partida em andamento
-        date: new Date(),
-      });
+        `Player_${chatId}`,
+        "ChessBot",
+        game.nivel
+      );
 
       // Atualizar o jogo no MongoDB
       game.fen = newFen;
-      game.pgn = moves.join(" "); // Armazenar os movimentos em formato UCI
+      game.pgn = moves.join(" ");
       game.atualizadoEm = Date.now();
       await game.save();
 
-      // Responder com os movimentos e o PGN (sem o FEN)
+      // Responder com os movimentos em SAN
+      const stockfishSanMove = gameEngine.getSanMove(stockfishUciMove);
       ctx.reply(
-        `Seu movimento: ${userMove}\nMinha resposta: ${stockfishMove}\n\n📜 **PGN da Partida**:\n${pgnText}`
+        `Seu movimento: ${sanMove}\nMinha resposta: ${stockfishSanMove}\n\n📜 **PGN da Partida**:\n${pgnText}`
       );
     } catch (error) {
       console.error("Erro ao processar o movimento:", error);
