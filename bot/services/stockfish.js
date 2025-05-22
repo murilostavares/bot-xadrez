@@ -3,7 +3,7 @@ import { promisify } from "util";
 const execPromise = promisify(exec);
 
 export class Stockfish {
-  static async getBestMove(fen, level, movetime = 1000) {
+  static async getBestMove(fen, level, movetime = 500) {
     const stockfishCommands = [
       `uci`,
       `setoption name Skill Level value ${level}`,

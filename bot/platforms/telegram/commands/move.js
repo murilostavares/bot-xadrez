@@ -10,7 +10,10 @@ export function setupMoveCommand(bot) {
       const args = ctx.message.text.split(" ").slice(1);
       const sanMove = args[0];
 
+      console.log("Comando /move recebido com argumento:", sanMove);
+
       if (!sanMove) {
+        console.log("Erro: Nenhum movimento fornecido.");
         ctx.reply(
           "Por favor, forneça um movimento válido (ex.: /move e4 ou /move Cxe4)."
         );
@@ -21,28 +24,41 @@ export function setupMoveCommand(bot) {
       const game = await Game.findOne({ chatId, ativo: true });
 
       if (!game) {
+        console.log("Erro: Nenhum jogo ativo encontrado.");
         ctx.reply(
           "Nenhum jogo ativo encontrado. Use /start ou /newgame para começar."
         );
         return;
       }
 
+      console.log("Jogo encontrado com FEN:", game.fen);
+
       // Inicializar o motor de jogo
       const gameEngine = new GameEngine(game.fen);
+      if (!gameEngine.chess.validate_fen(game.fen).valid) {
+        console.error("FEN inválido detectado:", game.fen);
+        throw new Error(
+          "Estado do tabuleiro corrompido. Inicie um novo jogo com /newgame."
+        );
+      }
 
       // Validar e aplicar o movimento do usuário
       const userMove = gameEngine.applyMove(sanMove);
       const userUciMove = userMove.from + userMove.to;
+      console.log("Movimento do usuário (UCI):", userUciMove);
 
       // Obter o melhor movimento do Stockfish
+      console.log("Consultando Stockfish com FEN:", game.fen);
       const stockfishUciMove = await Stockfish.getBestMove(
         game.fen,
         game.nivel
       );
+      console.log("Movimento do Stockfish (UCI):", stockfishUciMove);
 
       // Atualizar o tabuleiro com os movimentos
       gameEngine.applyMove(gameEngine.getSanMove(stockfishUciMove));
       const newFen = gameEngine.getFen();
+      console.log("Novo FEN após movimentos:", newFen);
 
       // Gerar o PGN
       const moves = game.pgn ? game.pgn.split(" ") : [];
@@ -53,12 +69,14 @@ export function setupMoveCommand(bot) {
         "ChessBot",
         game.nivel
       );
+      console.log("PGN gerado:", pgnText);
 
       // Atualizar o jogo no MongoDB
       game.fen = newFen;
       game.pgn = moves.join(" ");
       game.atualizadoEm = Date.now();
       await game.save();
+      console.log("Jogo salvo no MongoDB com FEN:", newFen);
 
       // Responder com os movimentos em SAN
       const stockfishSanMove = gameEngine.getSanMove(stockfishUciMove);
