@@ -1,5 +1,4 @@
-// ~/bot-xadrez/utils/pgn.js
-import { Chess } from "chess.js/chess.js";
+import { Chess } from "chess.js"; // Corrige a importação
 
 // Função para formatar a data no formato PGN (ex.: [Date "2025.05.22"])
 function formatDate(date) {

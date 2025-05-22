@@ -1,4 +1,4 @@
-import { Chess } from "chess.js/chess.js"; // Importação explícita do módulo ESM
+import { Chess } from "chess.js"; // Corrige a importação
 
 export class GameEngine {
   constructor(fen) {
