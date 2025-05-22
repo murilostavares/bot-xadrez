@@ -1,5 +1,6 @@
 // ~/bot-xadrez/services/game-engine.js
 import { Chess } from "chess.js";
+import { generatePGN } from "../utils/pgn.js";
 
 export class GameEngine {
   constructor(fen) {
@@ -7,27 +8,22 @@ export class GameEngine {
     this.chess = new Chess(fen);
     this.initialFen = fen;
     console.log("Métodos disponíveis em chess:", Object.keys(this.chess));
+    console.log(
+      "Métodos no protótipo de chess:",
+      Object.getOwnPropertyNames(Object.getPrototypeOf(this.chess))
+    );
   }
 
   // Valida o FEN
   validateFen(fen) {
     try {
       console.log("Validando FEN:", fen);
-      // Tenta usar o método validateFen do chess.js
-      if (typeof this.chess.validateFen === "function") {
-        const validation = this.chess.validateFen(fen);
-        console.log("Resultado da validação do FEN:", validation);
-        return {
-          valid: validation.valid,
-          error: validation.error || "No errors.",
-        };
-      }
-
-      // Fallback: Validação manual simples
-      console.log("Usando fallback para validação do FEN");
-      const chessTemp = new Chess();
-      chessTemp.load(fen);
-      return { valid: true, error: "No errors." };
+      const validation = this.chess.validateFen(fen);
+      console.log("Resultado da validação do FEN:", validation);
+      return {
+        valid: validation.valid,
+        error: validation.error || "No errors.",
+      };
     } catch (error) {
       console.error("Erro ao validar FEN:", error.message);
       return { valid: false, error: error.message };
