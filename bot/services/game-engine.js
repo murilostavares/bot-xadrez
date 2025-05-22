@@ -1,10 +1,11 @@
-import { Chess } from "chess.js"; // Corrige a importação
+import { Chess } from "chess.js";
 
 export class GameEngine {
   constructor(fen) {
     console.log("Inicializando GameEngine com FEN:", fen);
     this.chess = new Chess(fen);
     this.initialFen = fen;
+    console.log("Métodos disponíveis em chess:", Object.keys(this.chess));
   }
 
   // Valida o FEN
