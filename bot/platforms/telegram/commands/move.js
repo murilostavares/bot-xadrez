@@ -37,7 +37,7 @@ export function setupMoveCommand(bot) {
       const gameEngine = new GameEngine(game.fen);
 
       // Validar o FEN
-      const fenValidation = gameEngine.chess.validateFen(game.fen);
+      const fenValidation = gameEngine.validateFen(game.fen);
       if (!fenValidation.valid) {
         console.error(
           "FEN inválido detectado:",
@@ -70,7 +70,7 @@ export function setupMoveCommand(bot) {
       console.log("Novo FEN após movimentos:", newFen);
 
       // Validar o novo FEN
-      const newFenValidation = gameEngine.chess.validateFen(newFen);
+      const newFenValidation = gameEngine.validateFen(newFen);
       if (!newFenValidation.valid) {
         console.error(
           "Novo FEN inválido detectado:",
