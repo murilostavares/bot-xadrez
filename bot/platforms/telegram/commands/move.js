@@ -68,8 +68,15 @@ export function setupMoveCommand(bot) {
       );
       console.log("Movimento do Stockfish (UCI):", stockfishUciMove);
 
-      // Atualizar o tabuleiro com o movimento do Stockfish
-      gameEngine.applyMove(gameEngine.getSanMove(stockfishUciMove));
+      // Converter o movimento do Stockfish para SAN e aplicar
+      const stockfishSanMove = gameEngine.getSanMove(stockfishUciMove);
+      if (!stockfishSanMove) {
+        throw new Error("Erro ao converter o movimento do Stockfish para SAN.");
+      }
+      console.log("Movimento do Stockfish (SAN):", stockfishSanMove);
+      gameEngine.applyMove(stockfishSanMove);
+
+      // Obter o novo FEN após o movimento do Stockfish
       const newFen = gameEngine.getFen();
       console.log("Novo FEN após movimentos:", newFen);
 
@@ -104,7 +111,6 @@ export function setupMoveCommand(bot) {
       console.log("Jogo salvo no MongoDB com FEN:", newFen);
 
       // Responder com os movimentos em SAN
-      const stockfishSanMove = gameEngine.getSanMove(stockfishUciMove);
       ctx.reply(
         `Seu movimento: ${sanMove}\nMinha resposta: ${stockfishSanMove}\n\n📜 **PGN da Partida**:\n${pgnText}`
       );
