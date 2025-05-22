@@ -35,12 +35,21 @@ export function setupMoveCommand(bot) {
 
       // Inicializar o motor de jogo
       const gameEngine = new GameEngine(game.fen);
-      if (!gameEngine.chess.validate_fen(game.fen).valid) {
-        console.error("FEN inválido detectado:", game.fen);
+
+      // Validar o FEN
+      const fenValidation = gameEngine.chess.validateFen(game.fen);
+      if (!fenValidation.valid) {
+        console.error(
+          "FEN inválido detectado:",
+          game.fen,
+          "Erro:",
+          fenValidation.error
+        );
         throw new Error(
           "Estado do tabuleiro corrompido. Inicie um novo jogo com /newgame."
         );
       }
+      console.log("FEN validado com sucesso:", game.fen);
 
       // Validar e aplicar o movimento do usuário
       const userMove = gameEngine.applyMove(sanMove);
@@ -59,6 +68,18 @@ export function setupMoveCommand(bot) {
       gameEngine.applyMove(gameEngine.getSanMove(stockfishUciMove));
       const newFen = gameEngine.getFen();
       console.log("Novo FEN após movimentos:", newFen);
+
+      // Validar o novo FEN
+      const newFenValidation = gameEngine.chess.validateFen(newFen);
+      if (!newFenValidation.valid) {
+        console.error(
+          "Novo FEN inválido detectado:",
+          newFen,
+          "Erro:",
+          newFenValidation.error
+        );
+        throw new Error("Erro ao atualizar o tabuleiro. Tente novamente.");
+      }
 
       // Gerar o PGN
       const moves = game.pgn ? game.pgn.split(" ") : [];

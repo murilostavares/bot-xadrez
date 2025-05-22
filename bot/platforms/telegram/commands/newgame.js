@@ -1,3 +1,4 @@
+// ~/bot-xadrez/bot/platforms/telegram/commands/newgame.js
 import Game from "../../../models/Game.js";
 
 export function setupNewGameCommand(bot) {
@@ -5,23 +6,23 @@ export function setupNewGameCommand(bot) {
     try {
       const chatId = ctx.chat.id;
 
-      // Encerrar qualquer jogo ativo
-      await Game.updateMany(
-        { chatId, ativo: true },
-        { ativo: false, atualizadoEm: Date.now() }
-      );
+      // Desativar qualquer jogo ativo existente
+      await Game.updateMany({ chatId, ativo: true }, { ativo: false });
 
-      // Criar um novo jogo
-      const newGame = new Game({
+      // Criar um novo jogo com FEN padrão
+      const initialFen =
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+      const game = new Game({
         chatId,
-        fen: "rnbqkbnr/pppppppp/5n5/8/8/5N5/PPPPPPPP/RNBQKBNR w KQkq - 0 1", // Posição inicial
+        fen: initialFen,
         pgn: "",
-        nivel: 10, // Nível padrão
+        nivel: 10,
         ativo: true,
         criadoEm: Date.now(),
         atualizadoEm: Date.now(),
       });
-      await newGame.save();
+      await game.save();
+      console.log("Novo jogo criado via /newgame com FEN:", initialFen);
 
       ctx.reply("Novo jogo iniciado! ♟️ Use /move para fazer seu movimento.");
     } catch (error) {
