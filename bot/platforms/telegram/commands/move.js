@@ -1,4 +1,4 @@
-// ~/bot-xadrez/bot/platforms/telegram/commands/move.js
+// D:\Desenv\bot-xadrez\bot\platforms\telegram\commands\move.js
 import Game from "../../../models/Game.js";
 import { GameEngine } from "../../../services/game-engine.js";
 import { Stockfish } from "../../../services/stockfish.js";
@@ -20,7 +20,6 @@ export function setupMoveCommand(bot) {
         return;
       }
 
-      // Encontrar o jogo ativo
       const game = await Game.findOne({ chatId, ativo: true });
 
       if (!game) {
@@ -33,10 +32,8 @@ export function setupMoveCommand(bot) {
 
       console.log("Jogo encontrado com FEN:", game.fen);
 
-      // Inicializar o motor de jogo
       const gameEngine = new GameEngine(game.fen);
 
-      // Validar o FEN
       const fenValidation = gameEngine.validateFen(game.fen);
       if (!fenValidation.valid) {
         console.error(
@@ -49,15 +46,13 @@ export function setupMoveCommand(bot) {
           "Estado do tabuleiro corrompido. Inicie um novo jogo com /newgame."
         );
       }
-      console.log("FEN validado com sucesso:", game.fen);
 
-      // Validar e aplicar o movimento do usuário
       const moves = gameEngine.chess.moves({ verbose: true });
       const isValidMove = moves.some((move) => move.san === sanMove);
       if (!isValidMove) {
         console.log("Movimento inválido fornecido:", sanMove);
         ctx.reply(
-          `Movimento inválido: "${sanMove}". Use uma notação SAN válida (ex.: e4, Nc3, Qxd4). Movimentos legais: ${moves
+          `Movimento inválido: "${sanMove}". Movimentos legais: ${moves
             .map((m) => m.san)
             .join(", ")}`
         );
@@ -68,19 +63,38 @@ export function setupMoveCommand(bot) {
       const userUciMove = userMove.from + userMove.to;
       console.log("Movimento do usuário (UCI):", userUciMove);
 
-      // Atualizar o FEN com o movimento do usuário antes de consultar o Stockfish
       const fenAfterUserMove = gameEngine.getFen();
       console.log("FEN após movimento do usuário:", fenAfterUserMove);
 
-      // Obter o melhor movimento do Stockfish
-      console.log("Consultando Stockfish com FEN:", fenAfterUserMove);
+      if (gameEngine.isCheckmate()) {
+        const pgnMoves = game.pgn ? game.pgn.split(" ") : [];
+        pgnMoves.push(userUciMove);
+        const { text: pgnText } = gameEngine.generatePgn(
+          pgnMoves,
+          `Player_${chatId}`,
+          "ChessBot",
+          game.nivel
+        );
+        game.fen = fenAfterUserMove;
+        game.pgn = pgnMoves.join(" ");
+        game.ativo = false;
+        await game.save();
+        console.log(
+          "Xeque-mate detectado, jogo encerrado. FEN final:",
+          fenAfterUserMove
+        );
+        ctx.reply(
+          `Xeque-mate! Você venceu!\n\n📜 **PGN da Partida**:\n${pgnText}`
+        );
+        return;
+      }
+
       const stockfishUciMove = await Stockfish.getBestMove(
         fenAfterUserMove,
         game.nivel
       );
       console.log("Movimento do Stockfish (UCI):", stockfishUciMove);
 
-      // Converter o movimento do Stockfish para SAN e aplicar
       const stockfishSanMove = gameEngine.getSanMove(stockfishUciMove);
       if (!stockfishSanMove) {
         throw new Error("Erro ao converter o movimento do Stockfish para SAN.");
@@ -88,11 +102,9 @@ export function setupMoveCommand(bot) {
       console.log("Movimento do Stockfish (SAN):", stockfishSanMove);
       gameEngine.applyMove(stockfishSanMove);
 
-      // Obter o novo FEN após o movimento do Stockfish
       const newFen = gameEngine.getFen();
       console.log("Novo FEN após movimentos:", newFen);
 
-      // Validar o novo FEN
       const newFenValidation = gameEngine.validateFen(newFen);
       if (!newFenValidation.valid) {
         console.error(
@@ -104,7 +116,26 @@ export function setupMoveCommand(bot) {
         throw new Error("Erro ao atualizar o tabuleiro. Tente novamente.");
       }
 
-      // Gerar o PGN
+      if (gameEngine.isCheckmate()) {
+        const pgnMoves = game.pgn ? game.pgn.split(" ") : [];
+        pgnMoves.push(userUciMove, stockfishUciMove);
+        const { text: pgnText } = gameEngine.generatePgn(
+          pgnMoves,
+          `Player_${chatId}`,
+          "ChessBot",
+          game.nivel
+        );
+        game.fen = newFen;
+        game.pgn = pgnMoves.join(" ");
+        game.ativo = false;
+        await game.save();
+        console.log("Xeque-mate detectado, jogo encerrado. FEN final:", newFen);
+        ctx.reply(
+          `Xeque-mate! O bot venceu!\n\n📜 **PGN da Partida**:\n${pgnText}`
+        );
+        return;
+      }
+
       const pgnMoves = game.pgn ? game.pgn.split(" ") : [];
       pgnMoves.push(userUciMove, stockfishUciMove);
       const { text: pgnText } = gameEngine.generatePgn(
@@ -115,19 +146,20 @@ export function setupMoveCommand(bot) {
       );
       console.log("PGN gerado:", pgnText);
 
-      // Atualizar o jogo no MongoDB
       game.fen = newFen;
       game.pgn = pgnMoves.join(" ");
       game.atualizadoEm = Date.now();
       await game.save();
       console.log("Jogo salvo no MongoDB com FEN:", newFen);
 
-      // Responder com os movimentos em SAN
       ctx.reply(
         `Seu movimento: ${sanMove}\nMinha resposta: ${stockfishSanMove}\n\n📜 **PGN da Partida**:\n${pgnText}`
       );
     } catch (error) {
-      console.error("Erro ao processar o movimento:", error);
+      console.error(
+        "Erro ao processar o movimento:",
+        error.stack || error.message
+      );
       ctx.reply(
         "Desculpe, ocorreu um erro ao processar o movimento. Tente novamente mais tarde."
       );

@@ -1,86 +1,75 @@
-// ~/bot-xadrez/services/game-engine.js
+// D:\Desenv\bot-xadrez\bot\services\game-engine.js
 import { Chess } from "chess.js";
-import { generatePGN } from "../utils/pgn.js";
 
 export class GameEngine {
   constructor(fen) {
-    console.log("Inicializando GameEngine com FEN:", fen);
+    // console.log("Inicializando GameEngine com Chess:", Chess);
     this.chess = new Chess(fen);
-    this.initialFen = fen;
-    console.log("Métodos disponíveis em chess:", Object.keys(this.chess));
-    console.log(
-      "Métodos no protótipo de chess:",
-      Object.getOwnPropertyNames(Object.getPrototypeOf(this.chess))
-    );
-    console.log(
-      "Verificando validateFen:",
-      typeof this.chess.validateFen === "function"
-        ? "Disponível"
-        : "Não disponível"
-    );
+    // console.log("Instância chess criada:", this.chess);
   }
 
-  // Valida o FEN usando o fallback
   validateFen(fen) {
     try {
-      console.log("Validando FEN:", fen);
-      const chessTemp = new Chess();
-      chessTemp.load(fen);
-      console.log("FEN validado com sucesso via fallback");
-      return { valid: true, error: "No errors." };
+      new Chess(fen);
+      return { valid: true, error: null };
     } catch (error) {
-      console.error("Erro ao validar FEN:", error.message);
       return { valid: false, error: error.message };
     }
   }
 
-  // Valida e aplica um movimento em notação SAN
   applyMove(sanMove) {
-    console.log("Aplicando movimento SAN:", sanMove);
-    const move = this.chess.move(sanMove, { strict: true });
-    if (!move) {
-      throw new Error("Movimento inválido ou ilegal.");
-    }
-    return move;
+    return this.chess.move(sanMove);
   }
 
-  // Obtém o FEN atualizado
   getFen() {
-    const fen = this.chess.fen();
-    console.log("FEN obtido:", fen);
-    return fen;
+    return this.chess.fen();
   }
 
-  // Converte um movimento UCI para SAN
   getSanMove(uciMove) {
-    console.log("Convertendo movimento UCI para SAN:", uciMove);
-    const move = this.chess.move({
-      from: uciMove.slice(0, 2),
-      to: uciMove.slice(2, 4),
-    });
-    this.chess.undo(); // Desfaz para não alterar o estado
-    return move ? move.san : null;
+    const move = this.chess.move(uciMove, { verbose: true });
+    if (move) {
+      this.chess.undo();
+      return move.san;
+    }
+    return null;
   }
 
-  // Gera o PGN com base nos movimentos
-  generatePgn(
-    moves,
-    whitePlayer,
-    blackPlayer,
-    level,
-    result = "*",
-    date = new Date()
-  ) {
-    console.log("Gerando PGN com movimentos:", moves);
-    const pgn = generatePGN({
-      moves,
-      whitePlayer,
-      blackPlayer,
-      level,
-      result,
-      date,
+  isCheckmate() {
+    // console.log("Verificando checkmate com this.chess:", this.chess);
+    // console.log("Métodos disponíveis em this.chess:", Object.getOwnPropertyNames(Object.getPrototypeOf(this.chess)));
+    return this.chess.isCheckmate();
+  }
+
+  generatePgn(moves, whitePlayer, blackPlayer, level) {
+    const game = new Chess();
+    game.load(this.chess.fen());
+    moves.forEach((move) => {
+      if (move.includes("=")) {
+        const sanMove = this.getSanMove(move) || move;
+        game.move(sanMove);
+      } else {
+        game.move(move);
+      }
     });
-    console.log("PGN gerado:", pgn);
-    return pgn;
+    const headers = {
+      Event: "Casual Game",
+      Site: "Telegram",
+      Date: new Date().toISOString().split("T")[0],
+      Round: "1",
+      White: whitePlayer,
+      Black: blackPlayer,
+      Result: "*",
+      Level: level,
+    };
+    Object.entries(headers).forEach(([key, value]) =>
+      game.setHeader(key, value)
+    );
+    const headerText = Object.entries(game.getHeaders())
+      .map(([key, value]) => `${key} "${value}"`)
+      .join("\n");
+    return {
+      text: game.pgn(),
+      formatted: `${headerText}\n\n${game.pgn()}`,
+    };
   }
 }

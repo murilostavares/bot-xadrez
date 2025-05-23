@@ -22,11 +22,11 @@ export function setupNewGameCommand(bot) {
         atualizadoEm: Date.now(),
       });
       await game.save();
-      console.log("Novo jogo criado via /newgame com FEN:", initialFen);
+      console.log("Novo jogo criado com FEN:", initialFen); // Simplificado
 
       ctx.reply("Novo jogo iniciado! ♟️ Use /move para fazer seu movimento.");
     } catch (error) {
-      console.error("Erro ao iniciar novo jogo:", error);
+      console.error("Erro ao iniciar novo jogo:", error.message);
       ctx.reply(
         "Desculpe, ocorreu um erro ao iniciar um novo jogo. Tente novamente mais tarde."
       );
