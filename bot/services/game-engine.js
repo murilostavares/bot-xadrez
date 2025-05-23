@@ -3,9 +3,7 @@ import { Chess } from "chess.js";
 
 export class GameEngine {
   constructor(fen) {
-    // console.log("Inicializando GameEngine com Chess:", Chess);
     this.chess = new Chess(fen);
-    // console.log("Instância chess criada:", this.chess);
   }
 
   validateFen(fen) {
@@ -13,6 +11,7 @@ export class GameEngine {
       new Chess(fen);
       return { valid: true, error: null };
     } catch (error) {
+      console.error(`Erro ao validar FEN: ${error.message}`);
       return { valid: false, error: error.message };
     }
   }
@@ -26,6 +25,7 @@ export class GameEngine {
   }
 
   getSanMove(uciMove) {
+    if (!uciMove) return null;
     const move = this.chess.move(uciMove, { verbose: true });
     if (move) {
       this.chess.undo();
@@ -35,8 +35,6 @@ export class GameEngine {
   }
 
   isCheckmate() {
-    // console.log("Verificando checkmate com this.chess:", this.chess);
-    // console.log("Métodos disponíveis em this.chess:", Object.getOwnPropertyNames(Object.getPrototypeOf(this.chess)));
     return this.chess.isCheckmate();
   }
 
@@ -58,7 +56,7 @@ export class GameEngine {
       Round: "1",
       White: whitePlayer,
       Black: blackPlayer,
-      Result: "*",
+      Result: this.chess.isCheckmate() ? "1-0" : "*",
       Level: level,
     };
     Object.entries(headers).forEach(([key, value]) =>

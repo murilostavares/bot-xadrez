@@ -5,11 +5,7 @@ export function setupNewGameCommand(bot) {
   bot.command("newgame", async (ctx) => {
     try {
       const chatId = ctx.chat.id;
-
-      // Desativar qualquer jogo ativo existente
       await Game.updateMany({ chatId, ativo: true }, { ativo: false });
-
-      // Criar um novo jogo com FEN padrão
       const initialFen =
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
       const game = new Game({
@@ -22,14 +18,11 @@ export function setupNewGameCommand(bot) {
         atualizadoEm: Date.now(),
       });
       await game.save();
-      console.log("Novo jogo criado com FEN:", initialFen); // Simplificado
-
+      console.log("Novo jogo criado com FEN:", initialFen);
       ctx.reply("Novo jogo iniciado! ♟️ Use /move para fazer seu movimento.");
     } catch (error) {
       console.error("Erro ao iniciar novo jogo:", error.message);
-      ctx.reply(
-        "Desculpe, ocorreu um erro ao iniciar um novo jogo. Tente novamente mais tarde."
-      );
+      ctx.reply("Desculpe, ocorreu um erro ao iniciar um novo jogo.");
     }
   });
 }
