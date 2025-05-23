@@ -17,7 +17,8 @@ export class GameEngine {
   }
 
   applyMove(sanMove) {
-    return this.chess.move(sanMove);
+    const move = this.chess.move(sanMove);
+    return move; // Retorna null se inválido
   }
 
   getFen() {
@@ -25,11 +26,14 @@ export class GameEngine {
   }
 
   getSanMove(uciMove) {
-    if (!uciMove) return null;
-    const move = this.chess.move(uciMove, { verbose: true });
+    const move = this.chess.move({
+      from: uciMove.slice(0, 2),
+      to: uciMove.slice(2),
+    });
     if (move) {
-      this.chess.undo();
-      return move.san;
+      const san = move.san;
+      this.chess.undo(); // Desfaz o movimento para restaurar o estado do tabuleiro
+      return san;
     }
     return null;
   }

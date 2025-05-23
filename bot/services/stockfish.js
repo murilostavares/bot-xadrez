@@ -5,7 +5,7 @@ import { join } from "path";
 import fs from "fs";
 
 export class Stockfish {
-  static async getBestMove(fen, level = 10) {
+  static async getBestMove(fen, level = 20) {
     const osPlatform = platform();
     let stockfishPath;
 
@@ -21,7 +21,6 @@ export class Stockfish {
       throw new Error(`Plataforma não suportada: ${osPlatform}`);
     }
 
-    // Verificar se o binário existe e é executável
     if (!fs.existsSync(stockfishPath)) {
       throw new Error(
         `Binário do Stockfish não encontrado em: ${stockfishPath}`
@@ -43,7 +42,7 @@ export class Stockfish {
       "uci",
       `setoption name Skill Level value ${level}`,
       `position fen ${fen}`,
-      "go movetime 3000 depth 10", // 3 segundos e profundidade 10
+      "go depth 20", // Aumentado para profundidade 20
     ];
     commands.forEach((cmd) => stockfish.stdin.write(`${cmd}\n`));
     stockfish.stdin.end();
@@ -69,7 +68,7 @@ export class Stockfish {
         if (code !== 0) {
           console.error(`Stockfish encerrado com código: ${code}`);
         }
-        resolve(bestMove || "e7e5"); // Movimento fallback
+        resolve(bestMove || "e7e5");
       });
 
       stockfish.on("error", (err) => {
@@ -80,7 +79,7 @@ export class Stockfish {
       setTimeout(() => {
         console.log("Timeout atingido, encerrando Stockfish...");
         stockfish.kill();
-      }, 5000); // Timeout de 5 segundos
+      }, 12000); // Aumentado para 12 segundos para suportar profundidade 20
     });
   }
 }
